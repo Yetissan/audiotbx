@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book [
+<!--Begin Entities-->
+<!ENTITY a80995e3b1adb02643dc4976932b93186 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_multiplybypi.xml">
+<!ENTITY a6a3e45cc82f40e12f2f64afa9c696973 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_sub.xml">
+<!ENTITY a7ca39973bffa30e62946aa91482bff01 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_sum.xml">
+<!ENTITY adb7fd9ced7f1b0f402043b8948c5b5b9 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/fortran_sum.xml">
+<!ENTITY acba73aacc988abfb5d1883789bd580f6 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/scilab_sum.xml">
+<!--End Entities-->
+]>
+<book version="5.0-subset Scilab" xml:lang="en_US"
+      xmlns="http://docbook.org/ns/docbook"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:svg="http://www.w3.org/2000/svg"
+      xmlns:mml="http://www.w3.org/1998/Math/MathML"
+      xmlns:html="http://www.w3.org/1999/xhtml"
+      xmlns:db="http://docbook.org/ns/docbook">
+  <info xml:id='audio_signal_processing_toolbox_manual'>
+    <title>Audio Signal Processing Toolbox</title>
+  </info>
+
+<part xml:id='section_87e961444336b64de683cdbdf5e610f6'>
+<title>Audio Signal Processing Toolbox</title>
+&a80995e3b1adb02643dc4976932b93186;
+&a6a3e45cc82f40e12f2f64afa9c696973;
+&a7ca39973bffa30e62946aa91482bff01;
+&adb7fd9ced7f1b0f402043b8948c5b5b9;
+&acba73aacc988abfb5d1883789bd580f6;
+</part>
+</book>
