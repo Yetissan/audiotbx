@@ -1,6 +1,6 @@
 funcprot(0);
 
-function [y, t] = pitchdet(x, n_start, n_end, fs, frame_size, stepping, absthd, fmin, fmax)
+function [y, t] = autbx_pitchdet(x, n_start, n_end, fs, frame_size, stepping, absthd, fmin, fmax)
     y = [];
     t = [];
 
