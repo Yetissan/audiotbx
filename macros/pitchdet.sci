@@ -60,5 +60,8 @@ function [y, t] = pitchdet(x, n_start, n_end, fs, frame_size, stepping, absthd, 
         
         y = [y, fs/idx(1)];
     end
+
+    s = size(y);
+    t = linspace((n_start - 1) / fs, (n_end - 1) / fs, s(2));
 endfunction
 
