@@ -1,0 +1,9 @@
+*.c linguist-language=Scilab
+*.cpp linguist-language=Scilab
+*.xml linguist-language=Scilab
+*.htm linguist-language=Scilab
+*.html linguist-language=Scilab
+*.xsl linguist-language=Scilab
+*.js linguist-language=Scilab
+*.css linguist-language=Scilab
+
