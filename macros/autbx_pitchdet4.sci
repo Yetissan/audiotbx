@@ -1,4 +1,4 @@
-function [y, t] = autbx_pitchdet3(x, n_start, n_end, fs, frame_size, stepping, absthd, fmin, fmax)
+function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, fmin, fmax, num_of_freq_slots, costfcn_type)
     y = [];
     t = [];
 
