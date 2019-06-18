@@ -39,6 +39,8 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
 
     freq_slot_size = (fmax - fmin) ./ (num_of_freq_slots);
     freq_candidates = [];
+    opt_freq_seq = [];
+    prev_cost = [];
     for i = 1 : stepping : (N - 2 .* frame_size + 2)
         s1 = x(i : i + frame_size - 1);
 
@@ -68,7 +70,6 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         else
             [m, idx1] = min(cmndf1);
         end
-        f1 = fs / idx1(1);
         
         cmndf2 = cmndf;
         cmndf2(1 : max([1, floor(tau_min)])) = M;
@@ -80,7 +81,6 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         else
             [m, idx2] = min(cmndf2);
         end
-        f2 = fs / idx2(1);
         
         cmndf3 = cmndf;
         cmndf3(1 : max([1, floor(1.25 .* tau_min)])) = M;
@@ -90,14 +90,22 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             tmp(find(cmndf3 > absthd)) = absthd + 1;
             [m, idx3] = min(tmp);
         else
-            [m, idx3] = min(cmndf1);
+            [m, idx3] = min(cmndf3);
         end
-        f3 = fs / idx3(1);
         
-        
+        f1 = fs ./ idx1(1);
+        f2 = fs ./ idx2(1);
+        f3 = fs ./ idx3(1);
+        if ((f1 > fmax) | (f1 < fmin)) then
+            freq_candidates = [0, 0, 0; freq_candidates];
+        else
+            freq_candidates = [f1, f2, f3; freq_candidates];
+        end
         
         if (i >= 2) then
             
+        else
+            prev_cost = 
         end
     end
 
