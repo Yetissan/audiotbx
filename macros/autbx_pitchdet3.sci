@@ -25,6 +25,11 @@ function [y, t] = autbx_pitchdet3(x, n_start, n_end, fs, frame_size, stepping, a
         return;
     end
 
+    if ((fmin < 0) | (fmax < 0) | (fmin >= fmax)) then
+        error('Invalid frequency range.');
+        return;
+    end
+
     x = (x(:))';
     r = modulo(length(x) + frame_size - 1, frame_size);
     if (r ~= 0) then

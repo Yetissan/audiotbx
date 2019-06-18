@@ -1,4 +1,4 @@
-function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, fmin, fmax, num_of_freq_slots, costfcn_type)
+function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, fmin, fmax, num_of_freq_slots)
     y = [];
     t = [];
 
@@ -24,6 +24,11 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         error('stepping must be positive.');
         return;
     end
+    
+    if ((fmin < 0) | (fmax < 0) | (fmin >= fmax)) then
+        error('Invalid frequency range.');
+        return;
+    end
 
     x = (x(:))';
     r = modulo(length(x) + frame_size - 1, frame_size);
@@ -31,7 +36,9 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         x = [x, zeros(1, frame_size - r)];
     end
     N = length(x);
-    
+
+    freq_slot_size = (fmax - fmin) ./ (num_of_freq_slots);
+    freq_candidates = [];
     for i = 1 : stepping : (N - 2 .* frame_size + 2)
         s1 = x(i : i + frame_size - 1);
 
@@ -48,18 +55,54 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             cmndf = [cmndf, amdf(k) .* (k - 1) ./ sum(amdf(2 : k))];
         end
         
-        if (~isempty(find(cmndf < absthd))) then
-            tmp = cmndf;
-            tmp(find(cmndf > absthd)) = absthd + 1;
-            [m, idx] = min(tmp);
+        tau_min = 1 ./ fmax;
+        tau_max = 1 ./ fmin;
+        M = max(cmndf);
+        cmndf1 = cmndf;
+        cmndf1(1 : max([1, floor(tau_min)])) = M;
+        cmndf1(min([N, floor(tau_max)]) : $) = M;
+        if (~isempty(find(cmndf1 < absthd))) then
+            tmp = cmndf1;
+            tmp(find(cmndf1 > absthd)) = absthd + 1;
+            [m, idx1] = min(tmp);
         else
-            [m, idx] = min(cmndf);
+            [m, idx1] = min(cmndf1);
         end
+        f1 = fs / idx1(1);
         
-        y = [y, fs/idx(1)];
+        cmndf2 = cmndf;
+        cmndf2(1 : max([1, floor(tau_min)])) = M;
+        cmndf2(min([N, floor(0.75 .* tau_max)]) : $) = M;
+        if (~isempty(find(cmndf2 < absthd))) then
+            tmp = cmndf2;
+            tmp(find(cmndf2 > absthd)) = absthd + 1;
+            [m, idx2] = min(tmp);
+        else
+            [m, idx2] = min(cmndf2);
+        end
+        f2 = fs / idx2(1);
+        
+        cmndf3 = cmndf;
+        cmndf3(1 : max([1, floor(1.25 .* tau_min)])) = M;
+        cmndf3(min([N, floor(tau_max)]) : $) = M;
+        if (~isempty(find(cmndf3 < absthd))) then
+            tmp = cmndf3;
+            tmp(find(cmndf3 > absthd)) = absthd + 1;
+            [m, idx3] = min(tmp);
+        else
+            [m, idx3] = min(cmndf1);
+        end
+        f3 = fs / idx3(1);
+        
+        
+        
+        if (i >= 2) then
+            
+        end
     end
 
     s = size(y);
     t = linspace((n_start - 1) / fs, (n_end - 1) / fs, s(2));
 endfunction
+
 

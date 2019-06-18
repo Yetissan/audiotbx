@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book [
 <!--Begin Entities-->
-<!ENTITY a80995e3b1adb02643dc4976932b93186 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_multiplybypi.xml">
-<!ENTITY a6a3e45cc82f40e12f2f64afa9c696973 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_sub.xml">
-<!ENTITY a7ca39973bffa30e62946aa91482bff01 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/c_sum.xml">
-<!ENTITY adb7fd9ced7f1b0f402043b8948c5b5b9 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/fortran_sum.xml">
-<!ENTITY acba73aacc988abfb5d1883789bd580f6 SYSTEM "file:///E:/Computer/MyProjects/audiotbx/help/en_US/scilab_sum.xml">
+<!ENTITY ab305a818e9f2b5c13afc74fcfc175311 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_multiplybypi.xml">
+<!ENTITY a265fdcf1713b380972f3e54045609910 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sub.xml">
+<!ENTITY a1903bebc38394da656f07f61abb4d651 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sum.xml">
+<!ENTITY a20102854b27f7a7176ee4cac73b96f54 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/fortran_sum.xml">
+<!ENTITY a4034278d16e55ba8cddbde71cf99a043 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/scilab_sum.xml">
 <!--End Entities-->
 ]>
 <book version="5.0-subset Scilab" xml:lang="en_US"
@@ -20,12 +20,12 @@
     <title>Audio Signal Processing Toolbox</title>
   </info>
 
-<part xml:id='section_87e961444336b64de683cdbdf5e610f6'>
+<part xml:id='section_d0bc519237a5a3eab970db650664e6ec'>
 <title>Audio Signal Processing Toolbox</title>
-&a80995e3b1adb02643dc4976932b93186;
-&a6a3e45cc82f40e12f2f64afa9c696973;
-&a7ca39973bffa30e62946aa91482bff01;
-&adb7fd9ced7f1b0f402043b8948c5b5b9;
-&acba73aacc988abfb5d1883789bd580f6;
+&ab305a818e9f2b5c13afc74fcfc175311;
+&a265fdcf1713b380972f3e54045609910;
+&a1903bebc38394da656f07f61abb4d651;
+&a20102854b27f7a7176ee4cac73b96f54;
+&a4034278d16e55ba8cddbde71cf99a043;
 </part>
 </book>
