@@ -75,10 +75,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         // to -1 as an indication of the fact.
         cmndf_lwr_envl = autbx_lwr_envelope(1 : length(cmndf), cmndf, 1);
         efctv_idx = find(cmndf_lwr_envl(2, :) < absthd);
-        efctv_cmndf_lwr_envl_idx = cmndf_lwr_envl(1, efctv_idx);
-        efctv_cmndf_lwr_envl_val = cmndf_lwr_envl(2, efctv_idx);
-        if (length(efctv_cmndf_lwr_envl_idx) >= 2) then
-            idx1 = efctv_cmndf_lwr_envl_idx(2);
+        efctv_lwr_envl_idx = cmndf_lwr_envl(1, efctv_idx);
+        efctv_lwr_envl_val = cmndf_lwr_envl(2, efctv_idx);
+        if (length(efctv_lwr_envl_idx) >= 2) then
+            idx1 = efctv_lwr_envl_idx(2);
             f1 = fs ./ idx1;
         else
             idx1 = -1;
@@ -91,10 +91,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             cmndf2(max([1, min([length(cmndf2), floor(0.75 * tau_max)])]) : $) = M;
             cmndf2_lwr_envl = autbx_lwr_envelope(1 : length(cmndf2), cmndf2, 1);
             efctv_idx2 = find(cmndf2_lwr_envl(2, :) < absthd);
-            efctv_cmndf2_lwr_envl_idx = cmndf2_lwr_envl(1, efctv_idx2);
-            efctv_cmndf2_lwr_envl_val = cmndf2_lwr_envl(2, efctv_idx2);
-            if (length(efctv_cmndf2_lwr_envl_idx) >= 2) then
-                idx2 = efctv_cmndf2_lwr_envl_idx(2);
+            efctv_lwr_envl_idx2 = cmndf2_lwr_envl(1, efctv_idx2);
+            efctv_lwr_envl_val2 = cmndf2_lwr_envl(2, efctv_idx2);
+            if (length(efctv_lwr_envl_idx2) >= 2) then
+                idx2 = efctv_lwr_envl_idx2(2);
                 f2 = fs ./ idx2;
             else
                 idx2 = -1;
@@ -106,10 +106,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             cmndf3(max([1, min([length(cmndf3), floor(tau_max)])]) : $) = M;
             cmndf3_lwr_envl = autbx_lwr_envelope(1 : length(cmndf3), cmndf3, 1);
             efctv_idx3 = find(cmndf3_lwr_envl(2, :) < absthd);
-            efctv_cmndf3_lwr_envl_idx = cmndf3_lwr_envl(1, efctv_idx3);
-            efctv_cmndf3_lwr_envl_val = cmndf3_lwr_envl(2, efctv_idx3);
-            if (length(efctv_cmndf3_lwr_envl_idx) >= 2) then
-                idx3 = efctv_cmndf3_lwr_envl_idx(2);
+            efctv_lwr_envl_idx3 = cmndf3_lwr_envl(1, efctv_idx3);
+            efctv_lwr_envl_val3 = cmndf3_lwr_envl(2, efctv_idx3);
+            if (length(efctv_lwr_envl_idx3) >= 2) then
+                idx3 = efctv_lwr_envl_idx3(2);
                 f3 = fs ./ idx3;
             else
                 idx3 = -1;
@@ -127,7 +127,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         if (i >= 2) then
 
         else
-            prev_cost =
+
         end
         
         frame_idx = frame_idx + 1;

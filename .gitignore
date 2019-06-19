@@ -10,6 +10,7 @@
 *.lib
 *.def
 *.mo
+*.jar
 
 /src/**/Debug
 /src/**/Release
