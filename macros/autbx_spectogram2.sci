@@ -1,4 +1,4 @@
-function [y, t, f] = autbx_spectogram2(x, fs, stft_size, window_type, ovlp_length)
+function [y, t, f] = autbx_spectogram2(x, fs, stft_size, window_type, ovlp_length, wantplot)
     y = [];
     t = [];
     f = [];
@@ -15,7 +15,7 @@ function [y, t, f] = autbx_spectogram2(x, fs, stft_size, window_type, ovlp_lengt
         error('Improper ovlp_length.');
         return;
     end
-    
+
     r = modulo(N + ovlp_length, stft_size);
     if (r ~= 0) then
         x = [x, zeros(1, stft_size - r)];
@@ -35,4 +35,18 @@ function [y, t, f] = autbx_spectogram2(x, fs, stft_size, window_type, ovlp_lengt
     s = size(y);
     t = linspace(0, N/fs, s(1));
     f = linspace(0, fs/2, s(2));
+
+    if (wantplot == 1) then
+        scf();
+        grayplot(t, f, y);
+
+        hf = gcf();
+        hf.color_map = jetcolormap(granularity);
+
+        a = gca();
+        a.x_label.text = 'Time (s)';
+        a.y_label.text = 'Frequency (Hz)';
+        xtitle('Spectogram');
+    end
 endfunction
+
