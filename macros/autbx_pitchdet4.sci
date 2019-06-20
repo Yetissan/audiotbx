@@ -40,7 +40,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
     freq_candidates = [];
     opt_freq_seq = [];
     prev_cost = ones(1, 3) .* %eps;
-    seg_idx = 1;
+    last_seg_starts_from = 1;
     frame_idx = 1;
     for i = 1 : stepping : (N - 2 .* frame_size + 2)
         s1 = x(i : i + frame_size - 1);
@@ -123,13 +123,9 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         end
         
         state_cost = [f1, f2, f3] ./ M;
-
-        if (i >= 2) then
-
-        else
-
+        if (state_cost == [-1, -1, -1]) then
         end
-        
+
         frame_idx = frame_idx + 1;
     end
     
