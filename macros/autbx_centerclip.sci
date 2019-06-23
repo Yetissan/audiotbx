@@ -6,13 +6,12 @@ function [y] = autbx_centerclip(x, threshold)
         return;
     end
     
-    for i = 1:length(x)
-        if (x(i) > threshold) then
-            y(i) = x(i) - threshold;
-        elseif (x(i) < -(threshold)) then
-            y(i) = x(i) + threshold;
-        else
-            y(i) = 0;
-        end
-    end
+    y = x;
+
+    untouched = intersect(find(x >= -threshold), find(x <= threshold));
+    greater_than_thrd = find(x > threshold);
+    smaller_than_thrd = find(x < -threshold);
+    y(greater_than_thrd) = y(greater_than_thrd) - threshold;
+    y(smaller_than_thrd) = y(smaller_than_thrd) + threshold;
+    y(untouched) = x(untouched);
 endfunction

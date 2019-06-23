@@ -25,7 +25,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         return;
     end
 
-    if ((fmin < 0) | (fmax < 0) | (fmin >= fmax)) then
+    if ((fmin < 0) | (fmax < 0) | (fmin >= fmax) | (fmax >= fs ./ 2)) then
         error('Invalid frequency range.');
         return;
     end
@@ -38,9 +38,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
     N = length(x);
 
     freq_candidates = [];
-    opt_freq_seq = [];
-    prev_cost = ones(1, 3) .* %eps;
-    last_seg_starts_from = 1;
+    opt_freq_idx = [];
     frame_idx = 1;
     for i = 1 : stepping : (N - 2 .* frame_size + 2)
         s1 = x(i : i + frame_size - 1);
@@ -58,77 +56,118 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             cmndf = [cmndf, amdf(k) .* (k - 1) ./ sum(amdf(2 : k))];
         end
 
-        tau_min = 1 ./ fmax;
-        tau_max = 1 ./ fmin;
-        M = max(cmndf);
-
-        // Search for the smallest delay which gives a local minimum of CMNDF
+        // Search for the smallest delay which gives a minimum of CMNDF
         // smaller than absthd in the following search ranges respectively:
         //
         // [tau_min, tau_max]           [fmin, fmax]            f1
         // [tau_min, 0.75 * taumax]     [1.33 * fmin, fmax]     f2
         // [1.25 * taumin, tau_max]     [fmin, 0.75 * fmax]     f3
         //
-        // where fk (k = 1, 2, 3) be set to -1 if no eligible delay was found.
-        // Especially if no f1 was found, we will take the frame being observed
-        // by now as an unvoiced / unwanted frame thus setting f1, f2 and f3
-        // to -1 as an indication of the fact.
-        cmndf_lwr_envl = autbx_lwr_envelope(1 : length(cmndf), cmndf, 1);
-        efctv_idx = find(cmndf_lwr_envl(2, :) < absthd);
-        efctv_lwr_envl_idx = cmndf_lwr_envl(1, efctv_idx);
-        efctv_lwr_envl_val = cmndf_lwr_envl(2, efctv_idx);
-        if (length(efctv_lwr_envl_idx) >= 2) then
-            idx1 = efctv_lwr_envl_idx(2);
-            f1 = fs ./ idx1;
-        else
-            idx1 = -1;
-            f1 = -1;
+        // where fk (k = 1, 2, 3) be set to 0 if no eligible delay was found.
+        // Especially if no feasible f1 was found, we will take the frame being
+        // observed by now as an unwanted frame (happens to be an unvoiced one
+        // sometimes) thus setting f1, f2 and f3 to 0 as an indication of the fact.
+        tau_min = fs ./ fmax;
+        tau_max = fs ./ fmin;
+        cmndf_max = max(cmndf);
+
+        search_ranges = [   tau_min,        tau_max;            ...
+                            tau_min,        0.75 * tau_max;     ...
+                            1.25 * tau_min, tau_max ];
+        search_ranges_size = size(search_ranges);
+        num_of_freq_states = search_ranges_size(1);
+        curr_freq_cndds = zeros(1, num_of_freq_states);
+        curr_delay_cndds = zeros(1, num_of_freq_states);
+        for j = 1 : num_of_freq_states
+            curr_search_range = search_ranges(i, :);
+            __cmndf = cmndf;
+            __cmndf(find(__cmndf >= absthd)) = cmndf_max;
+            [m, __idx] = min(__cmndf);
+            __idx = __idx(1);
+            if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then
+                curr_freq_cndds(j) = fs ./ __idx;
+                curr_delay_cndds(j) = __idx;
+            elseif (j == 1) then
+                break;
+            end
+        end
+        freq_candidates = [freq_candidates; curr_freq_cndds];
+
+        if (frame_idx == 1) then
+            // Initialisation
+            prev_total_full_cost = ones(1, 3);
+            prev_avail_freqs_idx = find(curr_freq_cndds > 0);
+            prev_avail_freqs_idx = (prev_avail_freqs_idx(:))';
+            prev_freq_cndds = curr_freq_cndds;
         end
 
-        if (idx1 <> -1) then
-            cmndf2 = cmndf;
-            cmndf2(1 : min([length(cmndf2), max([1, floor(tau_min)])])) = M;
-            cmndf2(max([1, min([length(cmndf2), floor(0.75 * tau_max)])]) : $) = M;
-            cmndf2_lwr_envl = autbx_lwr_envelope(1 : length(cmndf2), cmndf2, 1);
-            efctv_idx2 = find(cmndf2_lwr_envl(2, :) < absthd);
-            efctv_lwr_envl_idx2 = cmndf2_lwr_envl(1, efctv_idx2);
-            efctv_lwr_envl_val2 = cmndf2_lwr_envl(2, efctv_idx2);
-            if (length(efctv_lwr_envl_idx2) >= 2) then
-                idx2 = efctv_lwr_envl_idx2(2);
-                f2 = fs ./ idx2;
-            else
-                idx2 = -1;
-                f2 = -1;
-            end
+        if (frame_idx >= 2) then
+            if (~isempty(prev_avail_freqs_idx)) then
+                // $$ J_{T}(i;j,k) = \left| \frac{1}{\ln{2 f_{i-1}^{j}}} \cdot \left( \ln{f_{i}^{k}} - \ln{f_{i-1}^{j}}  \right)\right|  $$
+                transition_costs = zeros(num_of_freq_states, num_of_freq_states);
+                for p = find(prev_freq_cndds > 0)
+                    for q = find(curr_freq_cndds > 0)
+                        transition_costs(p, q) = abs((log(curr_freq_cndds(q)) - log(prev_freq_cndds(p))) ./ log(2 * prev_freq_cndds(p)));
+                    end
+                end
 
-            cmndf3 = cmndf;
-            cmndf3(1 : min([length(cmndf3), max([1, 1.25 * floor(tau_min)])])) = M;
-            cmndf3(max([1, min([length(cmndf3), floor(tau_max)])]) : $) = M;
-            cmndf3_lwr_envl = autbx_lwr_envelope(1 : length(cmndf3), cmndf3, 1);
-            efctv_idx3 = find(cmndf3_lwr_envl(2, :) < absthd);
-            efctv_lwr_envl_idx3 = cmndf3_lwr_envl(1, efctv_idx3);
-            efctv_lwr_envl_val3 = cmndf3_lwr_envl(2, efctv_idx3);
-            if (length(efctv_lwr_envl_idx3) >= 2) then
-                idx3 = efctv_lwr_envl_idx3(2);
-                f3 = fs ./ idx3;
+                // $$ J_{S}(i;k) = \frac{d^{\prime}(\tau_{k})}{\max d^{\prime}(\cdot)} $$
+                state_costs = -1 * ones(1, num_of_freq_states);
+                for p = find(curr_delay_cndds > 0)
+                    state_costs(p) = cmndf(curr_delay_cndds) ./ cmndf_max;
+                end
+
+                // $$ J_{F}(i;j,k) = \alpha J_{T}(i;j,k) + (1 - \alpha) J_{S}(i;k)  $$
+                alpha = 0.5;
+                full_costs = -1 * ones(num_of_freq_states, num_of_freq_states);
+                for p = find(prev_freq_cndds > 0)
+                    for q = find(curr_freq_cndds > 0)
+                        full_costs(p, q) = (alpha .* transition_costs(p, q)) + ((1 - alpha) .* state_costs(q));
+                    end
+                end
+                normalize_factor = max(full_costs);
+                if (normalize_factor <> -1) then
+                    for p = find(prev_freq_cndds > 0)
+                        for q = find(curr_freq_cndds > 0)
+                            full_costs(p, q) = full_costs(p, q) ./ normalize_factor;
+                        end
+                    end
+                end
+
+                curr_avail_freqs_idx = find(curr_freq_cndds > 0);
+                curr_total_full_cost = zeros(1, 3);
+                for j = curr_avail_freqs_idx
+                    cost0 = prev_total_full_cost + (full_costs(:, j))';
+                    curr_opt_paths = prev_avail_freqs_idx;
+
+                    min_cost_path = curr_opt_paths(1);
+                    if (length(curr_opt_paths) >= 2) then
+                        for (k = curr_opt_paths(2 : $))
+                            if (cost0(k) < cost0(min_cost_path)) then
+                                min_cost_path = k;
+                            end
+                        end
+                    end
+
+                    curr_total_full_cost(j) = cost0(min_cost_path);
+                    opt_freq_idx(i, j) = min_cost_path;
+                end
+
+                prev_avail_freqs_idx = curr_avail_freqs_idx;
+                prev_total_full_cost = curr_total_full_cost;
+                prev_freq_cndds = curr_freq_cndds;
             else
-                idx3 = -1;
-                f3 = -1;
+                prev_total_full_cost = ones(1, 3);
+                prev_avail_freqs_idx = find(freq_candidates(frame_idx, :) > 0);
+                prev_avail_freqs_idx = (prev_avail_freqs_idx(:))';
+                prev_freq_cndds = curr_freq_cndds;
+                opt_freq_idx = [opt_freq_idx; -1, -1, -1];
             end
-        else
-            idx2 = -1;
-            f2 = -1;
-            idx3 = -1;
-            f3 = -1;
-        end
-        
-        state_cost = [f1, f2, f3] ./ M;
-        if (state_cost == [-1, -1, -1]) then
         end
 
         frame_idx = frame_idx + 1;
     end
-    
+
     num_of_frames = frame_idx - 1;
     if (seg_idx < num_of_frames) then
     end

@@ -6,13 +6,8 @@ function [y] = autbx_threelevelclip(x, threshold)
         return;
     end
     
-    for i = 1:length(x)
-        if (x(i) > threshold) then
-            y(i) = 1;
-        elseif (x(i) < -(threshold)) then
-            y(i) = -1;
-        else
-            y(i) = 0;
-        end
-    end
+    y = x;
+    y(intersect(find(y >= -threshold), find(y <= threshold))) = 0;
+    y(find(y > threshold)) = 1;
+    y(find(y < -threshold)) = -1;
 endfunction
