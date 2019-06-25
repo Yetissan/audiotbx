@@ -26,7 +26,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
     end
 
     if ((fmin < 0) | (fmax < 0) | (fmin >= fmax) | (fmax >= fs ./ 2)) then
-        error('Invalid frequency range.');
+        error('Invalid range of frequency.');
         return;
     end
 
@@ -94,15 +94,15 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         freq_candidates = [freq_candidates; curr_freq_cndds];
 
         if (frame_idx == 1) then
-            // Initialisation
-            prev_total_full_cost = ones(1, 3);
+            prev_total_full_cost = ones(1, num_of_freq_states);
             prev_avail_freqs_idx = find(curr_freq_cndds > 0);
             prev_avail_freqs_idx = (prev_avail_freqs_idx(:))';
             prev_freq_cndds = curr_freq_cndds;
         end
 
         if (frame_idx >= 2) then
-            if (~isempty(prev_avail_freqs_idx)) then
+            curr_avail_freqs_idx = find(curr_freq_cndds > 0);
+            if ((~isempty(prev_avail_freqs_idx)) & (~isempty(curr_avail_freqs_idx))) then
                 // $$ J_{T}(i;j,k) = \left| \frac{1}{\ln{2 f_{i-1}^{j}}} \cdot \left( \ln{f_{i}^{k}} - \ln{f_{i-1}^{j}}  \right)\right|  $$
                 transition_costs = zeros(num_of_freq_states, num_of_freq_states);
                 for p = find(prev_freq_cndds > 0)
@@ -125,6 +125,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                         full_costs(p, q) = (alpha .* transition_costs(p, q)) + ((1 - alpha) .* state_costs(q));
                     end
                 end
+
                 normalize_factor = max(full_costs);
                 if (normalize_factor <> -1) then
                     for p = find(prev_freq_cndds > 0)
@@ -134,11 +135,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                     end
                 end
 
-                curr_avail_freqs_idx = find(curr_freq_cndds > 0);
-                curr_total_full_cost = zeros(1, 3);
+                curr_total_full_cost = zeros(1, num_of_freq_states);
                 for j = curr_avail_freqs_idx
-                    cost0 = prev_total_full_cost + (full_costs(:, j))';
-                    curr_opt_paths = prev_avail_freqs_idx;
+                    cost0 = prev_total_full_cost .* full_costs(:, j)';
+                    curr_opt_paths = intersect(prev_avail_freqs_idx, find(full_costs(:, j) > 0));
 
                     min_cost_path = curr_opt_paths(1);
                     if (length(curr_opt_paths) >= 2) then
@@ -148,20 +148,22 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                             end
                         end
                     end
-
                     curr_total_full_cost(j) = cost0(min_cost_path);
                     opt_freq_idx(i, j) = min_cost_path;
                 end
+
+                normalize_factor = max(curr_total_full_cost);
+                curr_total_full_cost = curr_total_full_cost ./ normalize_factor;
 
                 prev_avail_freqs_idx = curr_avail_freqs_idx;
                 prev_total_full_cost = curr_total_full_cost;
                 prev_freq_cndds = curr_freq_cndds;
             else
-                prev_total_full_cost = ones(1, 3);
+                prev_total_full_cost = ones(1, num_of_freq_states);
                 prev_avail_freqs_idx = find(freq_candidates(frame_idx, :) > 0);
                 prev_avail_freqs_idx = (prev_avail_freqs_idx(:))';
                 prev_freq_cndds = curr_freq_cndds;
-                opt_freq_idx = [opt_freq_idx; -1, -1, -1];
+                opt_freq_idx = [opt_freq_idx; zeros(1, num_of_freq_states)];
             end
         end
 
@@ -169,7 +171,29 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
     end
 
     num_of_frames = frame_idx - 1;
-    if (seg_idx < num_of_frames) then
+
+    term_opt_freq_idx = 1;
+    if (~isempty(prev_avail_freqs_idx)) then
+        term_opt_freq_idx = prev_avail_freqs_idx(1);
+        if (length(prev_avail_freqs_idx) >= 2) then
+            for k = prev_avail_freqs_idx(2 : $)
+                if (prev_total_full_cost(k) < prev_total_full_cost(term_opt_freq_idx)) then
+                    term_opt_freq_idx = k;
+                end
+            end
+        end
+    end
+
+    y = freq_candidates(num_of_frames, term_opt_freq_idx);
+    prev_opt_freq_idx = term_opt_freq_idx;
+    for k = (num_of_frames - 1) : -1 : 1
+        curr_opt_freq_idx = opt_freq_idx(k + 1, prev_opt_freq_idx);
+        if (curr_opt_freq_idx > 0) then
+            y = [freq_candidates(k, curr_opt_freq_idx), y];
+        else
+            y = [0, y];
+        end
+        prev_opt_freq_idx = curr_opt_freq_idx;
     end
 
     s = size(y);
