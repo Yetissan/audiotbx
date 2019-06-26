@@ -34,3 +34,4 @@ function [yl] = autbx_lwr_envelope(pos, x, strict)
         yl = [yl, [pos(N); x(N)]];
     end
 endfunction
+

@@ -92,15 +92,28 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             disp(curr_search_range);
             __cmndf = cmndf;
             __cmndf(find(__cmndf >= absthd)) = cmndf_max;
-            [m, __idx] = min(__cmndf);
+            __cmndf_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf), __cmndf, 1);
+            __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp(1, :);
+            __cmndf_lwr_envlp_val = __cmndf_lwr_envlp(2, :);
+//            [m, __idx] = min(__cmndf);
+            [__b, __orig_idx] = gsort(__cmndf_lwr_envlp_val, 'g', 'i');
+            printf('AAA: \n'); disp(__idx);
             __idx = __idx(1);
             if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then
                 curr_freq_cndds(j) = fs ./ __idx;
                 curr_delay_cndds(j) = __idx;
                 printf('delay = %i, freq = %g \n', __idx, fs ./ __idx);
-            elseif (j == 1) then
-                printf('No eligible f1 was found. Abort. \n');
-                break;
+            else
+                [m, __idx] = min(cmndf);
+                __idx = __idx(1);
+                if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then
+                    curr_freq_cndds(j) = fs ./ __idx;
+                    curr_delay_cndds(j) = __idx;
+                    printf('relax... delay = %i, freq = %g \n', __idx, fs ./ __idx);
+                elseif (j == 1) then
+                    printf('No eligible f1 was found. Abort. \n');
+                    break;
+                end
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
@@ -203,7 +216,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         end
 
         frame_idx = frame_idx + 1;
-        sleep(100);
+        pause;
     end
 
     num_of_frames = frame_idx - 1;
