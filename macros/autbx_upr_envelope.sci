@@ -1,4 +1,4 @@
-function [yu] = autbx_upr_envelope(pos, x, strict)
+function [yu] = autbx_upr_envelope(pos, x, strict, obsvterms)
     yu = [];
     N = length(x);
     
@@ -12,7 +12,7 @@ function [yu] = autbx_upr_envelope(pos, x, strict)
         return;
     end
     
-    if (x(1) >= x(2)) then
+    if (x(1) >= x(2)) & (obsvterms == 1) then
         yu = [yu, [pos(1); x(1)]];
     end
     
@@ -30,7 +30,7 @@ function [yu] = autbx_upr_envelope(pos, x, strict)
         end
     end
 
-    if (x(N) >= x(N-1)) then
+    if (x(N) >= x(N-1)) & (obsvterms == 1) then
         yu = [yu, [pos(N); x(N)]];
     end
 endfunction

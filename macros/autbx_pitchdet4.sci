@@ -91,12 +91,16 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             printf('Current search range: \n');
             disp(curr_search_range);
             __cmndf = cmndf;
+            __cmndf(1 : min([length(__cmndf), max([1, floor(curr_search_range(1))])])) = cmndf_max;
+            __cmndf(max([1, min([length(cmndf2), floor(curr_search_range(2))])]) : $) = cmndf_max;
             __cmndf(find(__cmndf >= absthd)) = cmndf_max;
-            __cmndf_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf), __cmndf, 1);
+            __cmndf_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf), __cmndf, 1, 0);
             __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp(1, :);
             __cmndf_lwr_envlp_val = __cmndf_lwr_envlp(2, :);
 //            [m, __idx] = min(__cmndf);
-            [__b, __orig_idx] = gsort(__cmndf_lwr_envlp_val, 'g', 'i');
+            [__bval, __orig_idx] = gsort(__cmndf_lwr_envlp_val, 'g', 'i');
+            __bidx = __cmndf
+            __pkreltol = 0.5;
             printf('AAA: \n'); disp(__idx);
             __idx = __idx(1);
             if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then

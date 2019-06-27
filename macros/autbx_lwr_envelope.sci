@@ -1,4 +1,4 @@
-function [yl] = autbx_lwr_envelope(pos, x, strict)
+function [yl] = autbx_lwr_envelope(pos, x, strict, obsvterms)
     yl = [];
     N = length(x);
     
@@ -12,7 +12,7 @@ function [yl] = autbx_lwr_envelope(pos, x, strict)
         return;
     end
 
-    if (x(1) <= x(2)) then
+    if ((x(1) <= x(2)) & (obsvterms == 1)) then
         yl = [yl, [pos(1); x(1)]];
     end
     
@@ -30,7 +30,7 @@ function [yl] = autbx_lwr_envelope(pos, x, strict)
         end
     end
 
-    if (x(N) <= x(N-1)) then
+    if (x(N) <= x(N-1)) & (obsvterms == 1) then
         yl = [yl, [pos(N); x(N)]];
     end
 endfunction

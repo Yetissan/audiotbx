@@ -7,10 +7,10 @@ function [y, t, avg] = autbx_pitchdet2(x, n_start, n_end, fs, n0, t1, t2, ...
     x = (x(:))';
 
     // First order peaks of selected portion of x.
-    [xu, xl] = envelope(1:length(x), x, 1);
+    [xu, xl] = envelope(1:length(x), x, 1, 1);
     
     // Second order peaks of selected portion of x.
-    [yu, yl] = envelope(xl(1, :), xl(2, :), 1);
+    [yu, yl] = envelope(xl(1, :), xl(2, :), 1, 1);
     xx = xl;
     yy = yl;
     
