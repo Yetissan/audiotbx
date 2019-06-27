@@ -92,32 +92,29 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             disp(curr_search_range);
             __cmndf = cmndf;
             __cmndf(1 : min([length(__cmndf), max([1, floor(curr_search_range(1))])])) = cmndf_max;
-            __cmndf(max([1, min([length(cmndf2), floor(curr_search_range(2))])]) : $) = cmndf_max;
+            __cmndf(max([1, min([length(__cmndf), floor(curr_search_range(2))])]) : $) = cmndf_max;
             __cmndf(find(__cmndf >= absthd)) = cmndf_max;
             __cmndf_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf), __cmndf, 1, 0);
             __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp(1, :);
             __cmndf_lwr_envlp_val = __cmndf_lwr_envlp(2, :);
-//            [m, __idx] = min(__cmndf);
-            [__bval, __orig_idx] = gsort(__cmndf_lwr_envlp_val, 'g', 'i');
-            __bidx = __cmndf
             __pkreltol = 0.5;
-            printf('AAA: \n'); disp(__idx);
-            __idx = __idx(1);
-            if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then
-                curr_freq_cndds(j) = fs ./ __idx;
-                curr_delay_cndds(j) = __idx;
-                printf('delay = %i, freq = %g \n', __idx, fs ./ __idx);
-            else
-                [m, __idx] = min(cmndf);
-                __idx = __idx(1);
-                if ((__idx >= curr_search_range(1)) & (__idx <= curr_search_range(2))) then
+            if (~isempty(__cmndf_lwr_envlp_idx)) then
+                __b_min = min(__cmndf_lwr_envlp_val);
+                __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp_idx(find((__cmndf_lwr_envlp_idx >= curr_search_range(1)) & ...
+                            (__cmndf_lwr_envlp_idx <= curr_search_range(2))));
+                __bidx = __cmndf_lwr_envlp_idx(find((__cmndf_lwr_envlp_val >= (__b_min * __pkreltol)) & ...
+                            (__cmndf_lwr_envlp_val <= (__b_min * (1 + __pkreltol)))));
+                if (~isempty(__bidx) & (__bidx(1) >= curr_search_range(1)) & (__bidx(1) <= curr_search_range(2))) then
+                    __idx = min(__bidx);
                     curr_freq_cndds(j) = fs ./ __idx;
                     curr_delay_cndds(j) = __idx;
-                    printf('relax... delay = %i, freq = %g \n', __idx, fs ./ __idx);
-                elseif (j == 1) then
-                    printf('No eligible f1 was found. Abort. \n');
-                    break;
+                    printf('delay = %i, freq = %g \n', __idx, fs ./ __idx);
+                else
+                    printf('No eligible freq was found. \n');
                 end
+            elseif (j == 1) then
+                printf('No eligible f1 was found, abort. \n');
+                break;
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
@@ -137,7 +134,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             
             if ((~isempty(prev_avail_freqs_idx)) & (~isempty(curr_avail_freqs_idx))) then
                 // $$ J_{T}(i;j,k) = \left| \frac{1}{\ln{2 f_{i-1}^{j}}} \cdot \left( \ln{f_{i}^{k}} - \ln{f_{i-1}^{j}}  \right)\right|  $$
-                transition_costs = zeros(num_of_freq_states, num_of_freq_states);
+                transition_costs = ones(num_of_freq_states, num_of_freq_states);
                 for p = find(prev_freq_cndds > 0)
                     for q = find(curr_freq_cndds > 0)
                         transition_costs(p, q) = abs((log(curr_freq_cndds(q)) - log(prev_freq_cndds(p))) ./ log(2 * prev_freq_cndds(p)));
@@ -147,9 +144,9 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                 disp(transition_costs);
 
                 // $$ J_{S}(i;k) = \frac{d^{\prime}(\tau_{k})}{\max d^{\prime}(\cdot)} $$
-                state_costs = -1 * ones(1, num_of_freq_states);
-                for p = find(curr_delay_cndds > 0)
-                    state_costs(p) = cmndf(p) ./ cmndf_max;
+                state_costs = ones(1, num_of_freq_states);
+                for p = find(curr_freq_cndds > 0)
+                    state_costs(p) = cmndf(curr_delay_cndds(p)) ./ cmndf_max;
                 end
                 printf('State costs: \n');
                 disp(state_costs);
@@ -194,7 +191,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                         end
                     end
                     curr_total_full_cost(j) = cost0(min_cost_path);
-                    opt_freq_idx(i, j) = min_cost_path;
+                    opt_freq_idx(frame_idx, j) = min_cost_path;
                     
                     printf('Path with minimal cost terminated with freq #%i. \n', j);
                     disp(min_cost_path);
@@ -220,7 +217,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         end
 
         frame_idx = frame_idx + 1;
-        pause;
+//        pause;
     end
 
     num_of_frames = frame_idx - 1;
@@ -239,9 +236,20 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
 
     y = freq_candidates(num_of_frames, term_opt_freq_idx);
     prev_opt_freq_idx = term_opt_freq_idx;
+    effective_frm_flag = 0;
     for k = (num_of_frames - 1) : -1 : 1
-        curr_opt_freq_idx = opt_freq_idx(k + 1, prev_opt_freq_idx);
-        if (curr_opt_freq_idx > 0) then
+        pause;
+        printf('k  = %i \n', k);
+        printf('prev_opt_freq_idx = %i \n', prev_opt_freq_idx);
+        if (prev_opt_freq_idx > 0) then
+            effective_frm_flag = 1;
+            curr_opt_freq_idx = opt_freq_idx(k + 1, prev_opt_freq_idx);
+        else
+            effective_frm_flag = 0;
+            curr_opt_freq_idx = opt_freq_idx(k + 1, 1);
+        end
+        
+        if (effective_frm_flag == 1) then
             y = [freq_candidates(k, curr_opt_freq_idx), y];
         else
             y = [0, y];
