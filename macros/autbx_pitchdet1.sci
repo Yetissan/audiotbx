@@ -60,3 +60,4 @@ function [y, t] = autbx_pitchdet1(x, n_start, n_end, fs, window_type, frame_size
     z = size(y);
     t = linspace((n_start - 1)/fs, (n_end - 1)/fs, z(2));
 endfunction
+
