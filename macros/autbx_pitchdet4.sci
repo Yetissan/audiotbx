@@ -142,6 +142,23 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
+        
+        if (curr_frm_is_valid == 1) then
+            if ((frm_idx == 1) | (prev_frm_is_valid == 0)) then
+                
+            elseif ((prev_frm_is_valid == 1) | (frm_idx >= 2)) then
+                
+            else
+                error('Internal fault: invalid combination of curr_frm_is_valid, prev_frm_is_valid and frm_idx.');
+                return;
+            end
+        else // curr_frm_is_valid == 0
+            if (prev_frm_is_valid == 1) then
+                
+            else
+                
+            end
+        end
 
         if (frame_idx == 1) then
             prev_total_full_cost = ones(1, num_of_freq_states);
@@ -277,7 +294,6 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
         end
     end
 
-//    y = freq_candidates(num_of_frames, term_opt_freq_idx);
     y = [fred_candidates(last_valid_frm_idx, term_opt_freq_idx), zeros(1, num_of_frames - last_valid_frm_idx)];
     prev_opt_freq_idx = term_opt_freq_idx;
     effective_frm_flag = 0;
