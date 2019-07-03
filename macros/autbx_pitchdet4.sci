@@ -40,7 +40,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
     N = length(x);
 
     freq_candidates = [];
-    opt_freq_idx = [];
+    opt_freqs_idx = [];
     frame_idx = 1;
     last_valid_frm_idx = 0;
     prev_frm_is_valid = 0;
@@ -142,22 +142,18 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
-        
-        if (curr_frm_is_valid == 1) then
-            if ((frm_idx == 1) | (prev_frm_is_valid == 0)) then
-                
-            elseif ((prev_frm_is_valid == 1) | (frm_idx >= 2)) then
-                
-            else
-                error('Internal fault: invalid combination of curr_frm_is_valid, prev_frm_is_valid and frm_idx.');
-                return;
-            end
-        else // curr_frm_is_valid == 0
-            if (prev_frm_is_valid == 1) then
-                
-            else
-                
-            end
+
+        select ([prev_frm_is_valid, curr_frm_is_valid])
+        case [0, 0] then
+            opt_freqs_idx = [opt_freqs_idx; zeros(1, num_of_freq_states)];
+        case [0, 1] then
+
+        case [1, 0] then
+
+        case [1, 1] then
+
+        else
+
         end
 
         if (frame_idx == 1) then
@@ -233,7 +229,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                         end
                     end
                     curr_total_full_cost(j) = cost0(min_cost_path);
-                    opt_freq_idx(frame_idx, j) = min_cost_path;
+                    opt_freqs_idx(frame_idx, j) = min_cost_path;
 
                     printf('Path with minimal cost terminated with freq #%i. \n', j);
                     disp(min_cost_path);
@@ -272,7 +268,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, stepping, f
                 prev_avail_freqs_idx = find(freq_candidates(frame_idx, :) > 0);
                 prev_avail_freqs_idx = (prev_avail_freqs_idx(:))';
                 prev_freq_cndds = curr_freq_cndds;
-                opt_freq_idx = [opt_freq_idx; zeros(1, num_of_freq_states)];
+                opt_freqs_idx = [opt_freqs_idx; zeros(1, num_of_freq_states)];
             end
         end
 
