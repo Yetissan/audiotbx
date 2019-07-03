@@ -170,7 +170,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
                         end
                     end
                 end
-                printf('Local optimal freq = %g, idx = %d. \n', curr_freq_cndds(term_opt_freq_idx), term_opt_freq_idx);
+                printf('Local optimal freq = %g, idx = %d. \n', prev_freq_cndds(term_opt_freq_idx), term_opt_freq_idx);
                 part_opt_freqs_idx = [term_opt_freq_idx, part_opt_freqs_idx];
                 part_term_frms_idx = [frame_idx, part_term_frms_idx];
                 opt_freqs_idx = [opt_freqs_idx; zeros(1, num_of_freq_states)];
@@ -286,6 +286,8 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
     q = 0;
     if (~isempty(part_term_frms_idx)) then
         q = 1;
+        printf('part_term_frms_idx = \n'); disp(part_term_frms_idx);
+        printf('part_opt_freqs_idx = \n'); disp(part_opt_freqs_idx);
     end
     for k = (num_of_frames - 1) : -1 : 1
         curr_opt_freq_idx = opt_freqs_idx(k + 1, prev_opt_freq_idx);
@@ -295,7 +297,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
             y = [freq_candidates(k, curr_opt_freq_idx), y];
             prev_opt_freq_idx = curr_opt_freq_idx;
         else
-            if (q >= 1) then
+            if ((q >= 1) & (q < length(part_term_frms_idx))) then
                 if (k == part_term_frms_idx(q)) then
                     printf('Get index from part_term_frms_idx. \n');
                     printf('f = %g. \n', freq_candidates(k, part_opt_freqs_idx(q)));
@@ -306,7 +308,6 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
                     y = [0, y];
                 end
             else
-                printf('????????????????? \n');
                 y = [0, y];
             end
         end
