@@ -1,4 +1,4 @@
-function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length, fmin, fmax, absthd)
+function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length, fmin, fmax, absthd, autothd, vthd)
     if ((n_start <= 0) | (n_end > length(x))) then
         error('Out of bound.');
         return;
@@ -21,6 +21,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
         error('absthd: A non-negative real number is required.');
         return;
     end
+    
+    if ((autothd == 1) & (vthd <= 1)) then
+        error('vthd: must be larger than 1.')
+    end
 
     if ((fmin < 0) | (fmax < 0) | (fmin >= fmax) | (fmax >= fs ./ 2)) then
         error('Invalid range of frequency.');
@@ -42,8 +46,10 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
     last_avl_tot_full_cost = [];
     is_prev_frm_valid = 0;
     is_curr_frm_valid = 0;
+    is_curr_frm_voiced = 0;
     part_opt_freqs_idx = [];
     part_term_frms_idx = [];
+
     for i = 1 : (frame_size - ovlp_length) : (N - 2 .* frame_size + 2)
         printf('Frame #%d\t', frame_idx);
         s1 = x(i : i + frame_size - 1);
@@ -83,33 +89,58 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
         num_of_freq_states = search_ranges_size(1);
         curr_freq_cndds = zeros(1, num_of_freq_states);
         curr_delay_cndds = zeros(1, num_of_freq_states);
-        __pkreltol1 = 0.5;
-        __pkreltol2 = 0.35;
+        __pkreltol1 = 0.25;
         for j = 1 : num_of_freq_states
             curr_search_range = floor(search_ranges(j, :));
             __cmndf = cmndf;
+            if ((autothd == 1) & (j == 1)) then
+                __cmndf_upr_envlp = autbx_upr_envelope(1 : length(__cmndf), __cmndf, 1, 0);
+                if (__cmndf_upr_envlp(2, 1) >= vthd) then
+                    is_curr_frm_voiced = 1;
+                else
+                    is_curr_frm_valid = 0;
+                    is_curr_frm_voiced = 0;
+                    break;
+                end
+                __pkreltol2 = 0.05;
+                __thethd = absthd;
+                for __thd = 0.8 * absthd : 0.01 : 2.0 * absthd
+                    __cmndf2 = cmndf;
+                    __cmndf2(find(__cmndf2 >= __thd)) = cmndf_max;
+                    __cmndf2_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf2), __cmndf2, 1, 0);
+                    __cmndf2_lwr_envlp_idx = __cmndf2_lwr_envlp(1, :);
+                    __cmndf2_lwr_envlp_val = __cmndf2_lwr_envlp(2, :);
+                    __bidx2 = __cmndf2_lwr_envlp_idx(find(__cmndf2_lwr_envlp_val <= __thd));
+                    __bidx2 = __bidx2(find ((__bidx2 >= tau_min) & (__bidx2 <= tau_max)));
+                    if (length(__bidx2) >= 3) then
+                        __thethd = __thd;
+                        break;
+                    end
+                end
+            elseif (autothd == 0) then
+                __pkreltol2 = 0.1;
+                __thethd = absthd;
+            end
+            __cmndf(find(__cmndf >= (1 + __pkreltol1)*__thethd)) = cmndf_max;
             __cmndf(1 : min([length(__cmndf), max([1, floor(curr_search_range(1))])])) = cmndf_max;
             __cmndf(max([1, min([length(__cmndf), floor(curr_search_range(2))])]) : $) = cmndf_max;
-            __cmndf(find(__cmndf >= (1 + __pkreltol1)*absthd)) = cmndf_max;
             __cmndf_lwr_envlp = autbx_lwr_envelope(1 : length(__cmndf), __cmndf, 1, 0);
             __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp(1, :);
             __cmndf_lwr_envlp_val = __cmndf_lwr_envlp(2, :);
             if (~isempty(__cmndf_lwr_envlp_idx)) then
-                __cmndf_lwr_envlp_idx = __cmndf_lwr_envlp_idx(find((__cmndf_lwr_envlp_idx >= curr_search_range(1)) & ...
-                    (__cmndf_lwr_envlp_idx <= curr_search_range(2))));
-                __bidx = __cmndf_lwr_envlp_idx(find(__cmndf_lwr_envlp_val <= (absthd * (1 + __pkreltol2))));
+                __bidx = __cmndf_lwr_envlp_idx(find(__cmndf_lwr_envlp_val <= (__thethd * (1 + __pkreltol2))));
                 if (~isempty(__bidx) & (__bidx(1) >= max([tau_min, curr_search_range(1)])) & ...
                     (__bidx(1) <= min([tau_max, curr_search_range(2)]))) then
-                    __idx = min(__bidx);
+                    __idx = __bidx(1);
                     curr_freq_cndds(j) = fs ./ __idx;
                     curr_delay_cndds(j) = __idx;
                     if (j == 1) then
                         is_curr_frm_valid = 1;
                         last_valid_frm_idx = frame_idx;
-                        search_ranges(2, 1) = 1.414 * __idx;
-                        search_ranges(2, 2) = 2.828 * __idx;
-                        search_ranges(3, 1) = 0.353 * __idx;
-                        search_ranges(3, 2) = 0.707 * __idx;
+                        search_ranges(2, 1) = floor(1.414 * __idx);
+                        search_ranges(2, 2) = ceil(2.828 * __idx);
+                        search_ranges(3, 1) = floor(0.353 * __idx);
+                        search_ranges(3, 2) = ceil(0.707 * __idx);
                     end
                 else
                     if (j == 1) then
@@ -123,8 +154,20 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
-
-        printf('[ %d %d ]\n', is_prev_frm_valid, is_curr_frm_valid);
+        
+        if (autothd == 1) then
+            if (is_curr_frm_voiced == 1) then
+                printf('V\t');
+            else
+                printf('U\t');
+            end
+        end
+        printf('[ %d %d ]\t', is_prev_frm_valid, is_curr_frm_valid);
+        for p = 1 : num_of_freq_states
+            printf('%g\t', curr_freq_cndds(p));
+        end
+        printf('\n');
+        
         select ([is_prev_frm_valid, is_curr_frm_valid])
             case [0, 0] then
                 opt_freqs_idx = [opt_freqs_idx; zeros(1, num_of_freq_states)];
@@ -213,7 +256,9 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
                 end
 
                 normalize_factor = max(curr_total_full_cost);
-                curr_total_full_cost = curr_total_full_cost ./ normalize_factor;
+                if (normalize_factor > 0) then
+                    curr_total_full_cost = curr_total_full_cost ./ normalize_factor;
+                end
 
                 prev_avail_freqs_idx = curr_avail_freqs_idx;
                 prev_total_full_cost = curr_total_full_cost;
@@ -228,6 +273,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
         end
 
         frame_idx = frame_idx + 1;
+//        input('...');
     end
 
     num_of_frames = frame_idx - 1;
