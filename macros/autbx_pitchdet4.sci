@@ -1,4 +1,4 @@
-function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length, fmin, fmax, absthd, autothd, vthd)
+function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length, fmin, fmax, postpcs, ppmethod, maxdf, absthd, autothd, vthd)
     if ((n_start <= 0) | (n_end > length(x))) then
         error('Out of bound.');
         return;
@@ -21,13 +21,18 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
         error('absthd: A non-negative real number is required.');
         return;
     end
-    
+
     if ((autothd == 1) & (vthd <= 1)) then
         error('vthd: must be larger than 1.')
     end
 
     if ((fmin < 0) | (fmax < 0) | (fmin >= fmax) | (fmax >= fs ./ 2)) then
         error('Invalid range of frequency.');
+        return;
+    end
+
+    if (maxdf <= 0) then
+        error('maxdf: A non-negative real number is required.');
         return;
     end
 
@@ -154,7 +159,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
             end
         end
         freq_candidates = [freq_candidates; curr_freq_cndds];
-        
+
         if (autothd == 1) then
             if (is_curr_frm_voiced == 1) then
                 printf('V\t');
@@ -167,7 +172,7 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
             printf('%g\t', curr_freq_cndds(p));
         end
         printf('\n');
-        
+
         select ([is_prev_frm_valid, is_curr_frm_valid])
             case [0, 0] then
                 opt_freqs_idx = [opt_freqs_idx; zeros(1, num_of_freq_states)];
@@ -273,7 +278,6 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
         end
 
         frame_idx = frame_idx + 1;
-//        input('...');
     end
 
     num_of_frames = frame_idx - 1;
@@ -323,6 +327,142 @@ function [y, t] = autbx_pitchdet4(x, n_start, n_end, fs, frame_size, ovlp_length
             end
         end
     end
+
+    // Silly post-processing
+    if (postpcs == 0) then
+        sz = size(y);
+        t = linspace((n_start - 1) / fs, (n_end - 1) / fs, sz(2));
+        return;
+    end
+
+    avail_frms = find(y > 0);
+    next_left_trm_idx = avail_frms(1);
+    segs = [];
+    for i = 2 : length(avail_frms)
+        if (avail_frms(i) - avail_frms(i-1) > 1) then
+            segs = [segs; next_left_trm_idx, avail_frms(i-1)];
+            next_left_trm_idx = avail_frms(i);
+        end
+    end
+    segs = [segs; next_left_trm_idx, avail_frms($)];
+    sizeof_segs = size(segs);
+    for i = 1 : sizeof_segs(1)
+        printf('Segment #%d\t[%d, %d]\t', i, segs(i, 1), segs(i, 2));
+        yy = y(segs(i, 1) : segs(i, 2));
+        yylen = length(yy);
+
+        jumps_idx = [];
+        for j = 1 : yylen - 1
+            if (abs(yy(j) - yy(j+1)) > maxdf) then
+                jumps_idx = [jumps_idx, j];
+            end
+        end
+
+        segs2 = [];
+        if (length(jumps_idx) >= 1) then
+            if (jumps_idx(1) > 1) then
+                segs2 = [1, jumps_idx(1)];
+                q = min([jumps_idx(1) + 1, yylen]);
+            else
+                q = 1;
+            end
+
+            for j = 2 : length(jumps_idx)
+                segs2 = [segs2; q, jumps_idx(j)];
+                q = min([jumps_idx(j) + 1, yylen]);
+            end
+
+            if (q < yylen) then
+                segs2 = [segs2; q, yylen];
+            end
+        end
+
+        if (ppmethod == 0) then
+            [M, k] = max(segs2(:, 2) - segs2(:, 1));
+        else
+            [M, k] = min(segs2(:, 2) - segs2(:, 1));
+        end
+        a = segs2(k, 1);
+        b = segs2(k, 2);
+        printf('[%d, %d]\n', segs(i, 1) + a - 1, segs(i, 1) + b - 1);
+
+        for k = a-1 : -1 : 1
+            if (abs(y(segs(i, 1) + k - 1) - y(segs(i, 1) + k)) > maxdf) then
+                printf('Frame #%d\t\t%g\t\t->\t\t', segs(i, 1) + k - 1, y(segs(i, 1) + k - 1));
+                the_freq_cndds = freq_candidates(segs(i, 1) + k - 1, :);
+                d = abs(the_freq_cndds - y(segs(i, 1) + k));
+                d(find(the_freq_cndds == 0)) = max(d) + 1;
+                [m, kk] = min(d);
+                y(segs(i, 1) + k - 1) = the_freq_cndds(kk);
+                printf('%g\n', the_freq_cndds(kk));
+            end
+        end
+
+        for l = b + 1 : yylen
+            if (abs(y(segs(i, 1) + l - 1) - y(segs(i, 1) + l - 2)) > maxdf) then
+                printf('Frame #%d\t\t%g\t\t->\t\t', segs(i, 1) + l - 1, y(segs(i, 1) + l - 1));
+                the_freq_cndds = freq_candidates(segs(i, 1) + l - 1, :);
+                d = abs(the_freq_cndds - y(segs(i, 1) + l - 2));
+                d(find(the_freq_cndds == 0)) = max(d) + 1;
+                [m, ll] = min(d);
+                y(segs(i, 1) + l - 1) = the_freq_cndds(ll);
+                printf('%g\n', the_freq_cndds(ll));
+            end
+        end
+
+        yy2 = y(segs(i, 1) : segs(i, 2));
+        yylen2 = length(yy2);
+
+        jumps_idx2 = [];
+        for j = 1 : length(yy2) - 1
+            if (abs(yy2(j) - yy2(j+1)) > maxdf) then
+                jumps_idx2 = [jumps_idx2, j];
+            end
+        end
+
+        segs3 = [];
+        if (length(jumps_idx2) >= 1) then
+            if (jumps_idx2(1) > 1) then
+                segs3 = [1, jumps_idx2(1)];
+                q2 = min([jumps_idx2(1) + 1, yylen2]);
+            else
+                q2 = 1;
+            end
+
+            for j = 2 : length(jumps_idx2)
+                segs3 = [segs3; q, jumps_idx2(j)];
+                q2 = min([jumps_idx2(j) + 1, yylen2]);
+            end
+
+            if (q2 < yylen) then
+                segs3 = [segs3; q2, yylen2];
+            end
+        end
+        
+        if (isempty(segs3)) then
+            continue;
+        end
+
+        l2 = segs3(:, 2) - segs3(:, 1);
+        [M, k] = max(l2);
+        if (~isempty(find(l2 < M))) then
+            l3 = segs3(find(l2 < M), :);
+            u = [];
+            for j = 1 : length(l3(:, 1))
+                for k = l3(j, 1) : l3(j, 2)
+                    u = [u, [segs(i, 1) + k - 1; yy2(k)]];
+                end
+            end
+
+            d = splin(u(1, :), u(2, :));
+            yy2_intrp = interp(1:length(yy2), u(1,:), u(2,:), d, 'natural');
+
+            for j = 1 : yylen
+                y(segs(i, 1) + j - 1) = yy2_intrp(j);
+            end
+        end
+    end
+
 
     sz = size(y);
     t = linspace((n_start - 1) / fs, (n_end - 1) / fs, sz(2));
