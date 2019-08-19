@@ -6,9 +6,9 @@ extern "C" {
 #include <api_scilab.h>
 #include <MALLOC.h>
 static int direct_gateway(char *fname,void F(void)) { F();return 0;};
-extern Gatefunc sci_skeleton;
+extern Gatefunc sci_autbx_emd;
 static GenericTable Tab[]={
-  {(Myinterfun)sci_gateway_without_putlhsvar,sci_skeleton,"c_skeleton"},
+  {(Myinterfun)sci_gateway_without_putlhsvar,sci_autbx_emd,"autbx_emd"},
 };
  
 int C2F(audiotbx_c)()

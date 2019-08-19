@@ -16,7 +16,7 @@ if bOK then
 end
 //
 link(audiotbx_c_path + filesep() + '../../src/c/libaudiotbx' + getdynlibext());
-list_functions = [ 'c_skeleton';
+list_functions = [ 'autbx_emd';
 ];
 addinter(audiotbx_c_path + filesep() + 'audiotbx_c' + getdynlibext(), 'audiotbx_c', list_functions);
 // remove temp. variables on stack
