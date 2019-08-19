@@ -6,7 +6,7 @@ function builder_c()
     CFLAGS = ilib_include_flag(src_c_path);
 
     fcnsrctab = [ ...
-        "skeleton",             "skeleton.c"                                        ];
+        "EmpiricalModeDecomposition", "EmpiricalModeDecomposition.c" ];
 
     tbx_build_src(fcnsrctab(:,1), fcnsrctab(:,2), "c", src_c_path, "", ...
         "", CFLAGS, "", "", LIB_NAME);
