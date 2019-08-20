@@ -19,14 +19,14 @@ void emdResize(emdData* emd, int size) {
 	emdClear(emd);
 
 	emd->size = size;
-	emd->imfs = cnew(float*, emd->order);
+	emd->imfs = cnew(double*, emd->order);
 	for(i = 0; i < emd->order; i++)
-		emd->imfs[i] = cnew(float, size);
-	emd->residue = cnew(float, size);
+		emd->imfs[i] = cnew(double, size);
+	emd->residue = cnew(double, size);
 	emd->minPoints = cnew(int, size / 2);
 	emd->maxPoints = cnew(int, size / 2);
-	emd->min = cnew(float, size);
-	emd->max = cnew(float, size);
+	emd->min = cnew(double, size);
+	emd->max = cnew(double, size);
 }
 
 void emdCreate(emdData* emd, int size, int order, int iterations, int locality) {
@@ -48,12 +48,12 @@ void emdClear(emdData* emd) {
 	}
 }
 
-void emdDecompose(emdData* emd, const float* signal) {
+void emdDecompose(emdData* emd, const double* signal) {
 	int i, j;
-	memcpy(emd->imfs[0], signal, emd->size * sizeof(float));
-	memcpy(emd->residue, signal, emd->size * sizeof(float));
+	memcpy(emd->imfs[0], signal, emd->size * sizeof(double));
+	memcpy(emd->residue, signal, emd->size * sizeof(double));
 	for(i = 0; i < emd->order - 1; i++) {
-		float* curImf = emd->imfs[i];
+		double* curImf = emd->imfs[i];
 		for(j = 0; j < emd->iterations; j++) {
 			emdMakeExtrema(emd, curImf);
 			if(emd->minSize < 4 || emd->maxSize < 4)
@@ -63,7 +63,7 @@ void emdDecompose(emdData* emd, const float* signal) {
 			emdUpdateImf(emd, curImf);
 		}
 		emdMakeResidue(emd, curImf);
-		memcpy(emd->imfs[i + 1], emd->residue, emd->size * sizeof(float));
+		memcpy(emd->imfs[i + 1], emd->residue, emd->size * sizeof(double));
 	}
 }
 
@@ -71,7 +71,7 @@ void emdDecompose(emdData* emd, const float* signal) {
 // A better algorithm might be to collect all the extrema, and then assume
 // that extrema near the boundaries are valid, working toward the center.
 
-void emdMakeExtrema(emdData* emd, const float* curImf) {
+void emdMakeExtrema(emdData* emd, const double* curImf) {
 	int i, lastMin = 0, lastMax = 0;
 	emd->minSize = 0;
 	emd->maxSize = 0;
@@ -90,11 +90,11 @@ void emdMakeExtrema(emdData* emd, const float* curImf) {
 	}
 }
 
-void emdInterpolate(emdData* emd, const float* in, float* out, int* points, int pointsSize) {
+void emdInterpolate(emdData* emd, const double* in, double* out, int* points, int pointsSize) {
 	int size = emd->size;
 	int i, j, i0, i1, i2, i3, start, end;
-	float a0, a1, a2, a3;
-	float y0, y1, y2, y3, muScale, mu;
+	double a0, a1, a2, a3;
+	double y0, y1, y2, y3, muScale, mu;
 	for(i = -1; i < pointsSize; i++) {
 		i0 = points[mirrorIndex(i - 1, pointsSize)];
 		i1 = points[mirrorIndex(i, pointsSize)];
@@ -133,13 +133,13 @@ void emdInterpolate(emdData* emd, const float* in, float* out, int* points, int 
 	}
 }
 
-void emdUpdateImf(emdData* emd, float* imf) {
+void emdUpdateImf(emdData* emd, double* imf) {
 	int i;
 	for(i = 0; i < emd->size; i++)
 		imf[i] -= (emd->min[i] + emd->max[i]) * .5f;
 }
 
-void emdMakeResidue(emdData* emd, const float* cur) {
+void emdMakeResidue(emdData* emd, const double* cur) {
 	int i;
 	for(i = 0; i < emd->size; i++)
 		emd->residue[i] -= cur[i];

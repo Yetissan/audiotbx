@@ -29,7 +29,7 @@
 typedef struct {
 	int iterations, order, locality;
 	int *minPoints, *maxPoints;
-	float *min, *max, **imfs, *residue;
+	double *min, *max, **imfs, *residue;
 	int size, minSize, maxSize;
 } emdData;
 
@@ -37,9 +37,9 @@ void emdSetup(emdData* emd, int order, int iterations, int locality);
 void emdResize(emdData* emd, int size);
 void emdCreate(emdData* emd, int size, int order, int iterations, int locality);
 void emdClear(emdData* emd);
-void emdDecompose(emdData* emd, const float* signal);
-void emdMakeExtrema(emdData* emd, const float* curImf);
-void emdInterpolate(emdData* emd, const float* in, float* out, int* points, int pointsSize);
-void emdUpdateImf(emdData* emd, float* imf);
-void emdMakeResidue(emdData* emd, const float* cur);
+void emdDecompose(emdData* emd, const double* signal);
+void emdMakeExtrema(emdData* emd, const double* curImf);
+void emdInterpolate(emdData* emd, const double* in, double* out, int* points, int pointsSize);
+void emdUpdateImf(emdData* emd, double* imf);
+void emdMakeResidue(emdData* emd, const double* cur);
 inline int mirrorIndex(int i, int size);

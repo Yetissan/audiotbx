@@ -17,21 +17,21 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     int         num_of_in_args;
     int         num_of_out_args;
     int         **pvaraddrs = NULL;
-    int         **pvartypes = NULL;
+    int         *pvartypes = NULL;
     int         i;
     
-    double      *x;
+    double      *x = NULL;
     int         x_rows, x_cols, x_len;
-    double      *order;
+    double      *order = NULL;
     int         order_rows, order_cols;
-    double      *iters;
+    double      *iters = NULL;
     int         iters_rows, iters_cols;
-    double      *locality;
+    double      *locality = NULL;
     int         locality_rows, locality_cols;
     
     emdData     data;
     
-    double      *y;
+    double      *y = NULL;
         
     /* Constants used in step 1. */
     const int   MIN_NUM_OF_IN_ARGS      = 4;
@@ -53,7 +53,7 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (pvaraddrs == NULL)
     {
         Scierror(999, "Failed to allocate memory. \n\n");
-        goto cleanup_1;
+        goto cleanup;
     }
 
     for (i = 0; i < num_of_in_args; ++i)
@@ -62,35 +62,35 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
         if (err.iErr)
         {
             printError(&err, 0);
-            goto cleanup_1;
+            goto cleanup;
         }
     }
 
     /* Step 3.  Check the data type of each variable in `pvaraddrs[]'.
      */
-    pvartypes = (int**)malloc(sizeof(int*) * num_of_in_args);
+    pvartypes = (int*)malloc(sizeof(int*) * num_of_in_args);
     if (pvartypes == NULL)
     {
         Scierror(999, "Failed to allocate memory. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
 
     for (i = 0; i < num_of_in_args; ++i)
     {
-        err = getVarType(pvApiCtx, pvaraddrs[i], pvartypes[i]);
+        err = getVarType(pvApiCtx, pvaraddrs[i], &pvartypes[i]);
         if (err.iErr)
         {
             printError(&err, 0);
-            goto cleanup_2;
+            goto cleanup;
         }
     }
     
     for (i = 0; i < num_of_in_args; ++i)
     {
-        if (*pvartypes[i] != sci_matrix)
+        if (pvartypes[i] != sci_matrix)
         {
             Scierror(999, "Input argument #%d has an invalid datatype %d, sci_matrix expected. \n\n", i + 1, pvartypes[i]);
-            goto cleanup_2;
+            goto cleanup;
         }
     }
 
@@ -104,7 +104,7 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
         if (isVarComplex(pvApiCtx, pvaraddrs[i]))
         {
             Scierror(999, "Input argument %d must be a real matrix of doubles. \n\n", i + 1);
-            goto cleanup_2;
+            goto cleanup;
         }
     }
     
@@ -113,12 +113,12 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (err.iErr)
     {
         printError(&err, 0);
-        goto cleanup_2;
+        goto cleanup;
     }
     if ((x_rows == 0) || (x_cols == 0))
     {
         Scierror(999, "Wrong size of input argument 1. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
     x_len = x_rows * x_cols;
 
@@ -127,12 +127,12 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (err.iErr)
     {
         printError(&err, 0);
-        goto cleanup_2;
+        goto cleanup;
     }
     if ((order_rows != 1) || (order_cols != 1))
     {
         Scierror(999, "Wrong size of input argument 2. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
     
     /* Check `iterations' */
@@ -140,12 +140,12 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (err.iErr)
     {
         printError(&err, 0);
-        goto cleanup_2;
+        goto cleanup;
     }
     if ((iters_rows != 1) || (iters_cols != 1))
     {
         Scierror(999, "Wrong size of input argument 3. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
     
     /* Check `locality' */
@@ -153,26 +153,32 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (err.iErr)
     {
         printError(&err, 0);
-        goto cleanup_2;
+        goto cleanup;
     }
     if ((locality_rows == 0) || (locality_cols == 0))
     {
         Scierror(999, "Wrong size of input argument 4. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
 
-    /* Step 5.  Your application code here.
+    /* Step 5.  Your application codes here.
      */
-    pvartypes = (int**)malloc(sizeof(int*) * num_of_in_args);
+    y = (double*)malloc(sizeof(int*) * num_of_in_args);
     if (pvartypes == NULL)
     {
         Scierror(999, "Failed to allocate memory. \n\n");
-        goto cleanup_2;
+        goto cleanup;
     }
 
     emdCreate(&data, x_len, (int)*order, (int)*iters, (int)*locality);
-    emdDecompose(&data, (float*)x);
+    emdDecompose(&data, x);
+ 
+    for (i = 0; i < data.order; ++i)
+    {
+        memcpy(y + i * (data.size), (data.imfs) + i * (data.size), data.size);
+    }
 
+    emdClear(&data);
 
     /* Step 6.  Create the output arguments for Scilab engine and assign them.
      *
@@ -183,25 +189,20 @@ int sci_autbx_emd(char *fname, unsigned long fname_len)
     if (err.iErr)
     {
         printError(&err, 0);
-        goto cleanup_2;
-    }
-    
-    for (i = 0; i < data.order; ++i)
-    {
-        memcpy(y + i * (data.size), (data.imfs) + i * (data.size), data.size);
+        goto cleanup;
     }
     
     AssignOutputVariable(pvApiCtx, 1) = num_of_in_args + 1;
-    emdClear(&data);
-    
+
     /* Step 7.  Return the output arguments to the Scilab engine.
      */
+cleanup:
+    if (pvaraddrs != NULL) { free(pvaraddrs); }
+    if (pvartypes != NULL) { free(pvartypes); }
+    if (y != NULL) { free(y); }
+
     ReturnArguments(pvApiCtx);
 
-cleanup_2:
-    free(pvartypes);
-cleanup_1:
-    free(pvaraddrs);
     return 0;
 }
 

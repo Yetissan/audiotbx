@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book [
 <!--Begin Entities-->
-<!ENTITY ab305a818e9f2b5c13afc74fcfc175311 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_multiplybypi.xml">
-<!ENTITY a265fdcf1713b380972f3e54045609910 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sub.xml">
-<!ENTITY a1903bebc38394da656f07f61abb4d651 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sum.xml">
-<!ENTITY a20102854b27f7a7176ee4cac73b96f54 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/fortran_sum.xml">
-<!ENTITY a4034278d16e55ba8cddbde71cf99a043 SYSTEM "file:///E:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/scilab_sum.xml">
+<!ENTITY a2a82298fe84137ce483d2ab954b4169e SYSTEM "file:///e:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_multiplybypi.xml">
+<!ENTITY aa9593de40c9efea92ba58e40272dd4d3 SYSTEM "file:///e:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sub.xml">
+<!ENTITY a9c5df23e4769708f3754c5f30834644a SYSTEM "file:///e:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/c_sum.xml">
+<!ENTITY a6605017469f962a6e113c7137c1c4171 SYSTEM "file:///e:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/fortran_sum.xml">
+<!ENTITY a678d934509e6a228dbbd50cf37563190 SYSTEM "file:///e:/Computer/MyProjects/gitrepos/audiotbx/help/en_US/scilab_sum.xml">
 <!--End Entities-->
 ]>
 <book version="5.0-subset Scilab" xml:lang="en_US"
@@ -20,12 +20,12 @@
     <title>Audio Signal Processing Toolbox</title>
   </info>
 
-<part xml:id='section_d0bc519237a5a3eab970db650664e6ec'>
+<part xml:id='section_2da4a7953ab1bc641e92b0b951e2a3ea'>
 <title>Audio Signal Processing Toolbox</title>
-&ab305a818e9f2b5c13afc74fcfc175311;
-&a265fdcf1713b380972f3e54045609910;
-&a1903bebc38394da656f07f61abb4d651;
-&a20102854b27f7a7176ee4cac73b96f54;
-&a4034278d16e55ba8cddbde71cf99a043;
+&a2a82298fe84137ce483d2ab954b4169e;
+&aa9593de40c9efea92ba58e40272dd4d3;
+&a9c5df23e4769708f3754c5f30834644a;
+&a6605017469f962a6e113c7137c1c4171;
+&a678d934509e6a228dbbd50cf37563190;
 </part>
 </book>

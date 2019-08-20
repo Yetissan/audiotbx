@@ -10,12 +10,12 @@ end
 libaudiotbx_path = get_absolute_file_path('loader.sce');
 //
 // ulink previous function with same name
-[bOK, ilib] = c_link('skeleton');
+[bOK, ilib] = c_link('EmpiricalModeDecomposition');
 if bOK then
   ulink(ilib);
 end
 //
-link(libaudiotbx_path + 'liblibaudiotbx' + getdynlibext(), ['skeleton'],'c');
+link(libaudiotbx_path + 'liblibaudiotbx' + getdynlibext(), ['EmpiricalModeDecomposition'],'c');
 // remove temp. variables on stack
 clear libaudiotbx_path;
 clear bOK;
